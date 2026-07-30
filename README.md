@@ -1,39 +1,46 @@
 # AI Video Studio
 
-한국어 아이디어를 스토리보드와 구조화 프롬프트로 바꾸고, 수동 무료 제작·Gemini API 생성·로컬 후반 작업을 한곳에서 관리하는 영상 제작 스튜디오입니다.
+아이디어를 안정적인 생성 프롬프트로 설계하고, 프로젝트·참고 자료·예산·생성 결과를 한곳에서 관리하는 한국어 AI 영상 제작 앱입니다.
 
-## 지금 동작하는 기능
+## 구현된 기능
 
-- API 키 없이 수동 무료 모드, 로컬 후반 작업 모드, 모의 생성 실행
-- 16:9, 9:16, 1:1 기획과 3개 장면 스토리보드
-- 한국어·영문·JSON 프롬프트 자동 구성과 프롬프트 팩 다운로드
-- 권리 확인이 포함된 참고 에셋 선택
-- 품질 기준 점수와 연속성·안전성 체크
-- Gemini Omni Flash 서버 호출 경로, DRY_RUN, 작업별 예산 상한, 명시적 유료 확인
-- 모바일·키보드·reduced-motion 대응
+- Supabase 이메일 인증과 사용자별 작업 공간
+- 프로젝트 생성·수정·최근 프로젝트 불러오기
+- 피사체 일관성, 물리 표현, 카메라 안정성을 강화한 한/영 프롬프트
+- 50MB 제한의 비공개 참고 자료 업로드와 권리 확인
+- Row Level Security로 모든 데이터와 Storage 객체를 사용자별 분리
+- 작업당·하루 예산을 트랜잭션으로 예약하는 서버 측 비용 보호
+- 명시적 유료 호출 동의, 멱등성 키, DRY_RUN
+- Gemini Interactions 영상 생성, 비공개 저장, 1시간 서명 URL 재생
 
-## 로컬 실행
+## 설치
 
 ```bash
 npm install
+copy .env.example .env.local
 npm run dev
 ```
 
-`GEMINI_API_KEY`가 없어도 앱은 시작됩니다. 기본 `.env.example`을 `.env.local`로 복사한 뒤 필요한 값만 설정할 수 있습니다. 실제 키를 저장소에 커밋하거나 채팅에 붙여 넣지 마세요.
+`.env.local`에 Supabase URL, publishable key, 서버 전용 Gemini API 키를 입력합니다. 비밀 키는 Git이나 브라우저 코드에 넣지 마세요.
 
-## 비용 경계
+## Supabase
 
-- 수동 무료 모드: 이 앱은 비용을 청구하지 않습니다. Meta AI·Vibes의 제공 여부와 사용 한도는 해당 서비스의 현재 정책에 따릅니다.
-- 로컬 후반 작업: 생성 API를 호출하지 않습니다.
-- Gemini API 모드: 동영상 생성은 유료일 수 있으며, 실제 호출에는 비용 표시와 명시적 승인이 필요합니다.
-- 자동화 테스트와 기본 UI는 유료 호출을 하지 않습니다.
+`supabase/migrations/20260730225441_create_ai_video_studio.sql`을 대상 프로젝트에 적용합니다. 이 마이그레이션은 테이블, 인덱스, 제약 조건, RLS 정책, 비공개 `media` 버킷, 예산 예약 및 작업 상태 전환 함수를 함께 만듭니다.
 
-모델과 가격 정보는 2026-07-30 기준 공식 Gemini 문서를 바탕으로 구성했습니다. 프리뷰 모델 ID와 가격은 바뀔 수 있으므로 배포 전 다시 확인하세요.
+## 검증
 
-## API
+```bash
+npm run lint
+npm run build:vercel
+```
 
-- `POST /api/prompt`: 주제와 비율을 검증해 프롬프트 팩 생성
-- `POST /api/generate`: DRY_RUN 또는 명시적 승인 후 Gemini Interactions API 호출
-- `GET /api/health`: 무료·로컬·Gemini 모드 가용성 확인
+## 배포 환경 변수
 
-자세한 내용은 `docs/` 문서를 참고하세요.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `GEMINI_API_KEY`
+- `GEMINI_VIDEO_MODEL`
+- `OMNI_ESTIMATED_COST_USD`
+- `DRY_RUN`
+
+처음에는 `DRY_RUN=true`로 인증·저장·예산 흐름을 확인한 뒤 실제 생성이 필요할 때만 `false`로 바꾸는 것을 권장합니다.

@@ -7,7 +7,13 @@ export async function GET() {
       mock: true,
       gemini: Boolean(process.env.GEMINI_API_KEY),
     },
-    ffmpeg: "desktop-runtime",
+    services: {
+      supabase: Boolean(
+        process.env.NEXT_PUBLIC_SUPABASE_URL &&
+          process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      ),
+      storage: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    },
     secretsExposed: false,
   });
 }
