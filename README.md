@@ -25,7 +25,7 @@ npm run dev
 
 ## Supabase
 
-`supabase/migrations/20260730225441_create_ai_video_studio.sql`을 대상 프로젝트에 적용합니다. 이 마이그레이션은 테이블, 인덱스, 제약 조건, RLS 정책, 비공개 `media` 버킷, 예산 예약 및 작업 상태 전환 함수를 함께 만듭니다.
+`supabase/migrations/20260731032140_create_ai_video_studio.sql`을 대상 프로젝트에 적용합니다. 이 마이그레이션은 테이블, 인덱스, 제약 조건, RLS 정책, 비공개 `media` 버킷, 예산 예약 및 작업 상태 전환 함수를 함께 만듭니다.
 
 ## 검증
 

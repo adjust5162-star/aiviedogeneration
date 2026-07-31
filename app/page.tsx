@@ -138,7 +138,7 @@ export default function Home() {
         title: title.trim(),
         topic: topic.trim(),
         mode: "google",
-        platform: ratio === "9:16" ? "shorts" : "landscape",
+        platform: ratio === "9:16" ? "shorts" : "youtube",
         aspect_ratio: ratio,
         duration_seconds: duration,
         visual_style: "cinematic",
@@ -226,7 +226,7 @@ export default function Home() {
       const { error: assetError } = await supabase.from("assets").insert({
         project_id: targetProjectId,
         user_id: session.user.id,
-        kind: "reference",
+        kind: file.type.startsWith("video/") ? "source_video" : "reference_image",
         bucket_id: "media",
         object_path: objectPath,
         file_name: file.name,

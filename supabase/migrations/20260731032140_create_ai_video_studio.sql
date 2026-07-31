@@ -1,4 +1,6 @@
 create extension if not exists pgcrypto;
+create schema if not exists private;
+revoke all on schema private from public, anon;
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -246,7 +248,7 @@ for update to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
 
-create or replace function public.reserve_generation_job(
+create or replace function private.reserve_generation_job(
   p_project_id uuid,
   p_idempotency_key text,
   p_estimated_cost numeric,
@@ -334,12 +336,13 @@ begin
 end;
 $$;
 
-revoke all on function public.reserve_generation_job(uuid, text, numeric, text, text, text, integer)
+revoke all on function private.reserve_generation_job(uuid, text, numeric, text, text, text, integer)
 from public, anon;
-grant execute on function public.reserve_generation_job(uuid, text, numeric, text, text, text, integer)
+grant usage on schema private to authenticated;
+grant execute on function private.reserve_generation_job(uuid, text, numeric, text, text, text, integer)
 to authenticated;
 
-create or replace function public.start_generation_job(p_job_id uuid)
+create or replace function private.start_generation_job(p_job_id uuid)
 returns public.generation_jobs
 language plpgsql
 security definer
@@ -359,7 +362,7 @@ begin
 end;
 $$;
 
-create or replace function public.finish_generation_job(
+create or replace function private.finish_generation_job(
   p_job_id uuid,
   p_asset_id uuid,
   p_provider_job_id text
@@ -393,7 +396,7 @@ begin
 end;
 $$;
 
-create or replace function public.stop_generation_job(
+create or replace function private.stop_generation_job(
   p_job_id uuid,
   p_status text,
   p_error_message text
@@ -422,9 +425,74 @@ begin
 end;
 $$;
 
+revoke all on function private.start_generation_job(uuid) from public, anon;
+revoke all on function private.finish_generation_job(uuid, uuid, text) from public, anon;
+revoke all on function private.stop_generation_job(uuid, text, text) from public, anon;
+grant execute on function private.start_generation_job(uuid) to authenticated;
+grant execute on function private.finish_generation_job(uuid, uuid, text) to authenticated;
+grant execute on function private.stop_generation_job(uuid, text, text) to authenticated;
+
+create or replace function public.reserve_generation_job(
+  p_project_id uuid,
+  p_idempotency_key text,
+  p_estimated_cost numeric,
+  p_model text,
+  p_prompt text,
+  p_aspect_ratio text,
+  p_duration_seconds integer
+)
+returns public.generation_jobs
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.reserve_generation_job(
+    p_project_id,
+    p_idempotency_key,
+    p_estimated_cost,
+    p_model,
+    p_prompt,
+    p_aspect_ratio,
+    p_duration_seconds
+  );
+$$;
+
+create or replace function public.start_generation_job(p_job_id uuid)
+returns public.generation_jobs
+language sql
+security invoker
+set search_path = ''
+as $$ select private.start_generation_job(p_job_id); $$;
+
+create or replace function public.finish_generation_job(
+  p_job_id uuid,
+  p_asset_id uuid,
+  p_provider_job_id text
+)
+returns public.generation_jobs
+language sql
+security invoker
+set search_path = ''
+as $$ select private.finish_generation_job(p_job_id, p_asset_id, p_provider_job_id); $$;
+
+create or replace function public.stop_generation_job(
+  p_job_id uuid,
+  p_status text,
+  p_error_message text
+)
+returns public.generation_jobs
+language sql
+security invoker
+set search_path = ''
+as $$ select private.stop_generation_job(p_job_id, p_status, p_error_message); $$;
+
+revoke all on function public.reserve_generation_job(uuid, text, numeric, text, text, text, integer)
+from public, anon;
 revoke all on function public.start_generation_job(uuid) from public, anon;
 revoke all on function public.finish_generation_job(uuid, uuid, text) from public, anon;
 revoke all on function public.stop_generation_job(uuid, text, text) from public, anon;
+grant execute on function public.reserve_generation_job(uuid, text, numeric, text, text, text, integer)
+to authenticated;
 grant execute on function public.start_generation_job(uuid) to authenticated;
 grant execute on function public.finish_generation_job(uuid, uuid, text) to authenticated;
 grant execute on function public.stop_generation_job(uuid, text, text) to authenticated;
